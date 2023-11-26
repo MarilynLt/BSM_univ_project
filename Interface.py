@@ -3,6 +3,9 @@ from tkinter import ttk
 from tkinter import messagebox
 from datetime import datetime
 
+import pandas as pd
+from pandastable import Table
+
 from Option import Options
 
 
@@ -15,73 +18,88 @@ class BsmGUI:
         self.root = root
         self.root.title("Black-Scholes-Merton pricer")
         self.root.iconbitmap('assassins_creed.ico')
-        self.root.geometry("600x400")
+        self.root.geometry("525x437")
+        # self.root.configure(bg='#FF7F50')
         self.root.minsize(250, 300)
 
+        # self.filename = tk.PhotoImage(file=r"C:\Users\Marilyn\Downloads\data-flow.png")
+        # # self.background_label = ttk.Label(master=self.root, image=self.filename)
+        # # self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        # self.canvas = tk.Canvas(master=self.root, width=800, height=600)
+        # self.canvas.pack(side='top', fill='both', expand='yes')
+        # self.canvas.create_image(0, 0, image=self.filename)
+
         # Frame
-        self.main_frame = ttk.Frame(master=self.root, relief='raised')
-        self.main_frame.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S))
-        self.minor_frame = ttk.Frame(master=self.root, relief='sunken')
-        self.minor_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.main_frame = ttk.Frame(master=self.root, relief='ridge')
+        self.main_frame.grid(row=0, column=1, sticky="nsew")
+        self.minor_frame = ttk.Frame(master=self.root, relief='ridge')
+        self.minor_frame.grid(row=0, column=0, sticky="nsew")
 
         # Widget Minor Frame
+        self.label_title = ttk.Label(master=self.minor_frame, text="BSM Model on selected option")
+        self.label_title.grid(row=0, column=1, padx=5, pady=25, columnspan=2)
+
         self.lbl_type = ttk.Label(master=self.minor_frame, text="Type")
-        self.lbl_type.grid(row=0, column=0, padx=1, pady=1)
+        self.lbl_type.grid(row=1, column=0, padx=1, pady=1)
         self.ent_type = ttk.Entry(master=self.minor_frame, width=8)
-        self.ent_type.grid(row=0, column=1, padx=1, pady=3)
+        self.ent_type.grid(row=1, column=1, padx=1, pady=3)
 
         self.lbl_strike = ttk.Label(master=self.minor_frame, text="Strike")
-        self.lbl_strike.grid(row=1, column=0, padx=1, pady=1)
+        self.lbl_strike.grid(row=2, column=0, padx=1, pady=1)
         self.ent_strike = ttk.Entry(master=self.minor_frame, width=8)
-        self.ent_strike.grid(row=1, column=1, padx=1, pady=3)
+        self.ent_strike.grid(row=2, column=1, padx=1, pady=3)
 
         self.lbl_spot = ttk.Label(master=self.minor_frame, text='Spot:')
-        self.lbl_spot.grid(row=2, column=0, padx=1, pady=1)
+        self.lbl_spot.grid(row=3, column=0, padx=1, pady=1)
         self.ent_spot = ttk.Entry(master=self.minor_frame, width=8)
-        self.ent_spot.grid(row=2, column=1, padx=1, pady=3)
+        self.ent_spot.grid(row=3, column=1, padx=1, pady=3)
 
         self.lbl_maturity = ttk.Label(master=self.minor_frame, text='maturity date:')
-        self.lbl_maturity.grid(row=3, column=0, padx=1, pady=1)
+        self.lbl_maturity.grid(row=4, column=0, padx=1, pady=1)
         self.ent_maturity = ttk.Entry(master=self.minor_frame, width=10)
-        self.ent_maturity.grid(row=3, column=1, padx=1, pady=3)
+        self.ent_maturity.grid(row=4, column=1, padx=1, pady=3)
 
         self.lbl_vol = ttk.Label(master=self.minor_frame, text='volatility:')
-        self.lbl_vol.grid(row=4, column=0, padx=1, pady=1)
+        self.lbl_vol.grid(row=5, column=0, padx=1, pady=1)
         self.ent_vol = ttk.Entry(master=self.minor_frame, width=8)
-        self.ent_vol.grid(row=4, column=1, padx=1, pady=3)
+        self.ent_vol.grid(row=5, column=1, padx=1, pady=3)
 
         self.lbl = ttk.Label(master=self.minor_frame, text='Optional (in %)')
-        self.lbl.grid(row=5, column=0, columnspan=2, pady=18)
+        self.lbl.grid(row=6, column=0, columnspan=2, pady=18)
 
         self.lbl_rf = ttk.Label(master=self.minor_frame, text='risk free rate:')
-        self.lbl_rf.grid(row=6, column=0, padx=1, pady=1)
+        self.lbl_rf.grid(row=7, column=0, padx=1, pady=1)
         self.ent_rf = ttk.Entry(master=self.minor_frame, width=8)
-        self.ent_rf.grid(row=6, column=1, padx=1, pady=3)
+        self.ent_rf.grid(row=7, column=1, padx=1, pady=3)
 
         self.lbl_div = ttk.Label(master=self.minor_frame, text='dividend yield:')
-        self.lbl_div.grid(row=7, column=0, padx=1, pady=1)
+        self.lbl_div.grid(row=8, column=0, padx=2, pady=1)
         self.ent_div = ttk.Entry(master=self.minor_frame, width=8)
-        self.ent_div.grid(row=7, column=1, padx=1, pady=3)
+        self.ent_div.grid(row=8, column=1, padx=1, pady=3)
 
         self.btn_compute = ttk.Button(master=self.minor_frame, text='Compute', command=self.calculate)
-        self.btn_compute.grid(row=8, column=0, columnspan=2, padx=7, pady=22)
+        self.btn_compute.grid(row=9, column=0, columnspan=2, padx=7, pady=22)
 
         self.label_result = ttk.Label(master=self.minor_frame, text='Result:')
-        self.label_result.grid(row=9, column=0, columnspan=2)
+        self.label_result.grid(row=10, column=0, columnspan=2)
         self.ent_result = ttk.Entry(master=self.minor_frame, width=12)
-        self.ent_result.grid(row=10, column=0, columnspan=2, padx=7, pady=6)
+        self.ent_result.grid(row=11, column=0, columnspan=2, padx=7, pady=6)
 
         self.var1 = tk.IntVar()
         self.chk_ticker_ent = ttk.Entry(master=self.minor_frame, width=7)
-        self.chk_ticker_ent.grid(row=2, column=3)
+        self.chk_ticker_ent.grid(row=3, column=3)
         self.chk_ticker_lbl = ttk.Label(master=self.minor_frame, text='Ticker:')
-        self.chk_ticker_lbl.grid(row=2, column=2)
+        self.chk_ticker_lbl.grid(row=3, column=2)
         self.chk_ticker = ttk.Checkbutton(master=self.minor_frame, text='Download spot', variable=self.var1,
                                           onvalue=1, offvalue=0, command=self.fetch_spot)
-        self.chk_ticker.grid(row=1, column=2, columnspan=2, padx=40, sticky="nsew")
+        self.chk_ticker.grid(row=2, column=2, columnspan=2, padx=40, sticky="nsew")
 
-        #Widget Main frame
+        # Widget Main frame
+        self.lbl_title = ttk.Label(master=self.main_frame, text="BSM model on random Portfolio")
+        self.lbl_title.grid(row=0, column=1, padx=5, pady=25, columnspan=3)
 
+        self.btn_run = ttk.Button(master=self.main_frame, text='Run', command=self.run_bsm_ptf)
+        self.btn_run.grid(row=5, column=1, columnspan=2, padx=7, pady=22)
 
     def calculate(self):
         """
@@ -127,3 +145,42 @@ class BsmGUI:
             self.chk_ticker_ent.delete(0, tk.END)
             self.ent_spot.delete(0, tk.END)
 
+    @staticmethod
+    def manage_pdtable(data: pd.DataFrame):
+        window = tk.Toplevel()
+        window.iconbitmap('assassins_creed.ico')
+        window.grab_set()
+
+        frame = tk.Frame(master=window)
+        frame.pack(fill='both', expand=True)
+
+        pt = Table(frame, showtoolbar=True, showstatusbar=True)
+        pt.show()
+
+        pt.model.df = data
+
+    def run_bsm_ptf(self):
+        """
+        Lunch BSM model computation of option price, delta, gamma and vega
+        Returns: dataframe with all options infos
+        -------
+        """
+
+        stock_price = Options.retrieve_ticker()
+        df = Options.get_option(stock_price)
+
+        df['Price'] = 0
+        df['Delta'] = 0
+        df['Gamma'] = 0
+        df['Vega'] = 0
+
+        for i in range(len(df)):
+            op = Options(strike=df['Strike'].loc[i], spot=df['Spot'].loc[i], sigma=df['Volatility'].loc[i],
+                         t=(datetime.strptime(df['Maturity'].loc[i], '%Y-%m-%d') - datetime.now()).days / 365)
+
+            df['Price'].loc[i] = op.bsm(option_type=df['Type'].loc[i])
+            df['Delta'].loc[i] = op.delta(option_type=df['Type'].loc[i])
+            df['Gamma'].loc[i] = op.gamma()
+            df['Vega'].loc[i] = op.vega()
+
+        self.manage_pdtable(data=df)
