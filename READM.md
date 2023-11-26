@@ -1,0 +1,1 @@
+#this is a university python project on the black and scholes model with dividend included

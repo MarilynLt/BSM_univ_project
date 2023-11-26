@@ -1,18 +1,20 @@
+from random import randrange
 import numpy as np
 from scipy.stats import norm
 import bs4 as bs
 import pandas as pd
 import requests
 import yfinance as yf
+import time
 
 
-class Option:
+class Options:
     """
        Valuation of options in Black-Scholes-Merton Model (include dividend)
        Attributes
        ==========
-       spot: initial stock/index level
        strike: strike price
+       spot: initial stock/index level
        t: time to maturity (in year fractions)
        r: constant risk-free short rate, assume flat term structure
        q: yield of the dividend
@@ -20,7 +22,7 @@ class Option:
 
     """
 
-    def __int__(self, strike: float, spot: float, r: float, q: float, t: float, sigma: float):
+    def __init__(self, strike: float, spot: float, t: float, sigma: float, r: float = 0.05, q: float = 0.04):
         self.strike = strike
         self.spot = spot
         self.r = r
@@ -31,7 +33,7 @@ class Option:
         # private
         self._d1 = self.d1()
         self._d2 = self.d2()
-        self._tickers = self.retrieve_ticker()
+        # self._tickers = self.retrieve_ticker()
 
     @property
     def S(self):
@@ -64,30 +66,24 @@ class Option:
     def d2(self) -> float:
         return - (self.sigma * np.sqrt(self.t)) + self._d1
 
-    # def bsm(self, option_type: str) -> float:
-    #     if option_type == 'Call':
-    #         call = self.n(self._d1) * self.spot - self.n(self._d2) * self.strike * np.exp(-self.r * self.t)
-    #         return call
-    #     else:
-    #         put = self.n(- self._d2) * self.strike * np.exp(-self.r * self.t) - self.n(- self._d1) * self.spot
-    #     return put
-
     def bsm(self, option_type: str) -> float:
         """
         :param option_type: whether it is a Call or a Put
         :return: price of the put or call
         """
         try:
-            if option_type == 'Call':
-                call = self.spot * np.exp(-self.q * self.t) * self.n(self._d1) - self.strike * np.exp(-self.r * self.t) * \
+            if option_type == 'CALL' or 'CALLS':
+                call = self.spot * np.exp(-self.q * self.t) * self.n(self._d1) - self.strike * np.exp(
+                    -self.r * self.t) * \
                        self.n(self._d2)
-                return call
-            elif option_type == 'Put':
-                put = self.strike * np.exp(- self.r * self.t) * self.n(-self._d2) - self.spot * np.exp(- self.q * self.t) \
+                return call.round(3)
+            elif option_type == 'PUT' or 'PUTS':
+                put = self.strike * np.exp(- self.r * self.t) * self.n(-self._d2) - self.spot * np.exp(
+                    - self.q * self.t) \
                       * self.n(-self._d1)
-                return put
-        except:
-            print("Please enter the option type in string. It should be either Call or Put")
+                return put.round(3)
+        except Exception as e:
+            print(f"{e}: Please enter the option type in string. It should be either Call or Put")
 
     def delta(self, option_type: str) -> float:
         """
@@ -96,9 +92,9 @@ class Option:
         :return: delta of the option
         """
         try:
-            if option_type == 'Call':
+            if option_type == 'CALL'or 'CALLS':
                 delta = np.exp(-self.q * self.t) * self.n(self._d1)
-            elif option_type == 'Put':
+            elif option_type == 'PUT' or 'PUTS':
                 delta = np.exp(-self.q * self.t) * (self.n(self._d1) - 1)
             return delta
         except:
@@ -126,7 +122,7 @@ class Option:
         get sp100 stock ticker from wikipedia
         :return: list of stocks ticker
         """
-
+        # get the ticker from wikipedia ETF S&P 100 page
         r = requests.get("https://en.wikipedia.org/wiki/S%26P_100#Components")
         soup = bs.BeautifulSoup(r.text, 'lxml')
         table = soup.find('table', {'class': 'wikitable', 'id': 'constituents'})
@@ -140,34 +136,85 @@ class Option:
 
         tickers = [i.replace('\n', '') for i in tickers]
 
-        return tickers
+        # get the spot of each stocks from yahoo finance
+        spots = yf.download(tickers, interval="1m")['Adj Close'].iloc[-1, :]
+        stock_price = list(
+            pd.DataFrame({"stocks": tickers, "spot": spots}).reset_index(drop=True).to_records(index=False))
 
-    def get_spot(self, stocks: list) -> pd.DataFrame:
+        return stock_price
+
+    @staticmethod
+    def get_spot(ticker_list):
         """
         get spot price of a stocks list
-        :param stocks: list of stock ticker
+        :param ticker_list: list of stock ticker
         :return: dataframe with stocks and spots
         """
-        spots = yf.download(self._tickers, interval="1m")['Adj Close'].iloc[-1, :]
-        df = pd.DataFrame({"stocks": stocks, "spot": spots}).reset_index(drop=True)
-        return df
+        spot = yf.download(ticker_list)['Adj Close'].iloc[-1]
+        return spot.round(2)
 
-    def get_option(self) -> pd.DataFrame:
+    @staticmethod
+    def get_option(stock_price) -> pd.DataFrame:
         """
         Get the option characteristics from yahoo finance (s, k, t, sigma)
         :return: dataframe with the options data
         """
-        for t in self.retrieve_ticker():
-            maturity = yf.Ticker(str(t)).options
-            df = pd.DataFrame()
-            for exp in maturity:
-                opt = yf.Ticker(str(t)).option_chain(exp)
-                opt = pd.concat([opt.calls, opt.puts], ignore_index=True)
-                # opt = pd.DataFrame().append(opt.calls).append(opt.puts)
-            df = pd.concat([df, opt], ignore_index=True)
-            # df = df.append(opt, ignore_index=True)
+        # start = time.time()
+        option_data = []
+        for t, s in stock_price:
+            try:
+                maturity = yf.Ticker(str(t)).options
+                exp = maturity[randrange(len(maturity))]
+            except ValueError:
+                continue
 
-            # column to know if option is a call or a put
-            df['Type'] = df['contractSymbol'].str[7].apply(lambda x: 'Put' if "P" in x else 'Call')
+            for option_type in ['calls', 'puts']:
+                opt = getattr(yf.Ticker(str(t)).option_chain(exp), option_type)
+                for row in opt.itertuples():
+                    option_data.append({
+                        'Ticker': t,
+                        'Spot': s,
+                        'Maturity': exp,
+                        'Type': option_type,
+                        'Contract Symbol': row.contractSymbol,
+                        'Strike': row.strike,
+                        'Volatility': row.impliedVolatility,
+                        'Volume': row.volume,
+                        'Currency': row.currency
+                    })
+                    break
 
-        return df
+        # df = pd.DataFrame()
+        # df['Ticker'] = 0
+        # df['Spot'] = 0
+        # for t, s in Options.retrieve_ticker():
+        #     try:
+        #         maturity = yf.Ticker(str(t)).options
+        #         exp = maturity[randrange(len(maturity))] # return a random range from the maturity list
+        #     except ValueError:
+        #         continue
+        #
+        #     opt = yf.Ticker(str(t)).option_chain(exp)
+        #     opt = pd.concat([opt.calls, opt.puts], ignore_index=True)
+        #     df = pd.concat([df, opt], ignore_index=True)
+        #     df.loc[max(df.index), ('Ticker', 'Spot')] = t, s
+        #     df.iloc[:, 0:2] = df.iloc[:, 0:2].fillna(method='bfill')
+        #
+        # # column to know if option is a call or a put
+        # df['Type'] = df['contractSymbol'].str[4:].apply(lambda x: 'P' if "P" in x else 'C')
+
+        # print(time.time() - start)
+
+        return pd.DataFrame(option_data)
+
+
+"""
+# Get option data
+tickers = ['AAPL', 'MSFT', 'GOOGL']
+option_data = BlackScholes.get_option_data(tickers)
+
+# Compute option prices
+option_data['Option Price'] = option_data.apply(
+    lambda row: BlackScholes.get_option_price(
+        row['Strike'], row['Strike'], (row['Expiry'] - datetime.datetime.now()).days / 365, 0.01, 0.2, row['Type']), axis=1)
+        """
