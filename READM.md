@@ -21,3 +21,4 @@ Structure : 3 files (Interface, Option, Main)
 How to use the interface (2 Frame):
 *Main frame, for launching the BSM model on an random option portfolio. Open a tkinter window with the porfolio and the result (price, delta, gamma, vega)
 *Minor frame, allow to compute a option price based on BSM model (no Greck in this one)
+** maturity should be in following format: DD/MM/YYYY (for the pricer)
