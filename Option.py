@@ -33,7 +33,6 @@ class Options:
         # private
         self._d1 = self.d1()
         self._d2 = self.d2()
-        # self._tickers = self.retrieve_ticker()
 
     @property
     def S(self):
@@ -72,18 +71,17 @@ class Options:
         :return: price of the put or call
         """
         try:
-            if option_type == 'CALL' or 'CALLS':
+            if option_type == 'CALL':
                 call = self.spot * np.exp(-self.q * self.t) * self.n(self._d1) - self.strike * np.exp(
-                    -self.r * self.t) * \
-                       self.n(self._d2)
+                    -self.r * self.t) * self.n(self._d2)
                 return call.round(3)
-            elif option_type == 'PUT' or 'PUTS':
+            elif option_type == 'PUT':
                 put = self.strike * np.exp(- self.r * self.t) * self.n(-self._d2) - self.spot * np.exp(
-                    - self.q * self.t) \
-                      * self.n(-self._d1)
+                    - self.q * self.t) * self.n(-self._d1)
                 return put.round(3)
         except Exception as e:
-            print(f"{e}: Please enter the option type in string. It should be either Call or Put")
+            print(f"{e} \n"
+                  f"Please enter the option type in string. It should be either Call or Put")
 
     def delta(self, option_type: str) -> float:
         """
@@ -92,13 +90,14 @@ class Options:
         :return: delta of the option
         """
         try:
-            if option_type == 'CALL'or 'CALLS':
+            if option_type == 'CALL':
                 delta = np.exp(-self.q * self.t) * self.n(self._d1)
-            elif option_type == 'PUT' or 'PUTS':
+            elif option_type == 'PUT':
                 delta = np.exp(-self.q * self.t) * (self.n(self._d1) - 1)
-            return delta
-        except:
-            print("Option type missing, please enter the option type. It should be a string")
+            return delta.round(4)
+        except Exception as e:
+            print(f"{e} \n"
+                  f"Option type missing, please enter the option type. It should be a string")
 
     def gamma(self) -> float:
         """
@@ -106,7 +105,7 @@ class Options:
         :return: gama of the option
         """
         gamma = np.exp(-self.q * self.t) * norm.pdf(self._d1) / self.spot * self.sigma * np.sqrt(self.t)
-        return gamma
+        return gamma.round(4)
 
     def vega(self) -> float:
         """
@@ -114,7 +113,26 @@ class Options:
         :return: vega of the option
         """
         vega = self.spot * np.exp(-self.q * self.t) * np.sqrt(self.t) * norm.pdf(self._d1) / 100
-        return vega
+        return vega.round(4)
+
+    def theta(self, option_type) -> float:
+        """
+        Vega measures the change in the option price per one calendar day (or 1/365 of a year)
+        :return: theta of the option
+        """
+        try:
+            if option_type == 'CALL':
+                theta = (self.q * self.spot * np.exp(-self.q * self.t) * self.n(
+                    self._d1) - self.r * self.strike * np.exp(-self.r * self.t) * self.n(self._d2) - norm.pdf(
+                    self._d1) * self.spot * self.sigma * np.exp(-self.q * self.t) / 2 * np.sqrt(self.t)) / 365
+            elif option_type == 'PUT':
+                theta = (self.r * self.strike * np.exp(-self.r * self.t) * self.n(
+                    -self._d2) - self.q * self.spot * np.exp(-self.q * self.t) * self.n(-self._d1) - norm.pdf(
+                    self._d1) * self.spot * self.sigma * np.exp(-self.q * self.t) / 2 * np.sqrt(self.t)) / 365
+            return theta.round(4)
+        except Exception as e:
+            print(f"{e} \n"
+                  f"Option type missing, please enter the option type. It should be a string")
 
     @staticmethod
     def retrieve_ticker() -> list:
@@ -139,7 +157,7 @@ class Options:
         # get the spot of each stocks from yahoo finance
         spots = yf.download(tickers, interval="1m")['Adj Close'].iloc[-1, :]
         stock_price = list(
-            pd.DataFrame({"stocks": tickers, "spot": spots}).reset_index(drop=True).to_records(index=False))
+            pd.DataFrame({"stocks": tickers, "spot": spots}).reset_index(drop=True).dropna().to_records(index=False))
 
         return stock_price
 
@@ -159,7 +177,6 @@ class Options:
         Get the option characteristics from yahoo finance (s, k, t, sigma)
         :return: dataframe with the options data
         """
-        # start = time.time()
         option_data = []
         for t, s in stock_price:
             try:
@@ -171,11 +188,12 @@ class Options:
             for option_type in ['calls', 'puts']:
                 opt = getattr(yf.Ticker(str(t)).option_chain(exp), option_type)
                 for row in opt.itertuples():
+                    type_op = 'call' if option_type == 'calls' else 'put'
                     option_data.append({
                         'Ticker': t,
                         'Spot': s,
                         'Maturity': exp,
-                        'Type': option_type,
+                        'Type': type_op,
                         'Contract Symbol': row.contractSymbol,
                         'Strike': row.strike,
                         'Volatility': row.impliedVolatility,
@@ -206,15 +224,3 @@ class Options:
         # print(time.time() - start)
 
         return pd.DataFrame(option_data)
-
-
-"""
-# Get option data
-tickers = ['AAPL', 'MSFT', 'GOOGL']
-option_data = BlackScholes.get_option_data(tickers)
-
-# Compute option prices
-option_data['Option Price'] = option_data.apply(
-    lambda row: BlackScholes.get_option_price(
-        row['Strike'], row['Strike'], (row['Expiry'] - datetime.datetime.now()).days / 365, 0.01, 0.2, row['Type']), axis=1)
-        """
