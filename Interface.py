@@ -11,16 +11,18 @@ from Option import Options
 
 class BsmGUI:
     """
-    Black and scholes model GUI
+    Black and Scholes model GUI
     """
 
     def __init__(self, root):
+
+        # Root configuration
         self.root = root
         self.root.title("Black-Scholes-Merton pricer")
         self.root.iconbitmap('assassins_creed.ico')
-        self.root.geometry("525x437")
+        self.root.geometry("525x505")
         # self.root.configure(bg='#FF7F50')
-        self.root.minsize(250, 300)
+        self.root.minsize(525, 505)
 
         # self.filename = tk.PhotoImage(file=r"C:\Users\Marilyn\Downloads\data-flow.png")
         # # self.background_label = ttk.Label(master=self.root, image=self.filename)
@@ -82,8 +84,30 @@ class BsmGUI:
 
         self.label_result = ttk.Label(master=self.minor_frame, text='Result:')
         self.label_result.grid(row=10, column=0, columnspan=2)
-        self.ent_result = ttk.Entry(master=self.minor_frame, width=12)
-        self.ent_result.grid(row=11, column=0, columnspan=2, padx=7, pady=6)
+        self.label_price = ttk.Label(master=self.minor_frame, text='Price:')
+        self.label_price.grid(row=12, column=0)
+        self.ent_price = ttk.Entry(master=self.minor_frame, width=8)
+        self.ent_price.grid(row=12, column=1, pady=2)
+
+        self.label_delta = ttk.Label(master=self.minor_frame, text='Delta:')
+        self.label_delta.grid(row=11, column=2)
+        self.ent_delta = ttk.Entry(master=self.minor_frame, width=8)
+        self.ent_delta.grid(row=11, column=3, pady=2)
+
+        self.label_gamma = ttk.Label(master=self.minor_frame, text='Gamma:')
+        self.label_gamma.grid(row=12, column=2)
+        self.ent_gamma = ttk.Entry(master=self.minor_frame, width=8)
+        self.ent_gamma.grid(row=12, column=3, pady=2)
+
+        self.label_vega = ttk.Label(master=self.minor_frame, text='Vega:')
+        self.label_vega.grid(row=13, column=2)
+        self.ent_vega = ttk.Entry(master=self.minor_frame, width=8)
+        self.ent_vega.grid(row=13, column=3, pady=2)
+
+        self.label_theta = ttk.Label(master=self.minor_frame, text='Theta:')
+        self.label_theta.grid(row=14, column=2)
+        self.ent_theta = ttk.Entry(master=self.minor_frame, width=8)
+        self.ent_theta.grid(row=14, column=3, pady=2)
 
         self.var1 = tk.IntVar()
         self.chk_ticker_ent = ttk.Entry(master=self.minor_frame, width=7)
@@ -108,11 +132,19 @@ class BsmGUI:
         Return: float
         -------
         """
-        option_type = str(self.ent_type.get().upper())
-        strike_price = float(self.ent_strike.get())
-        spot_price = float(self.ent_spot.get())
-        maturity = (datetime.strptime(self.ent_maturity.get(), '%d/%m/%Y') - datetime.now()).days / 365
-        volatility = float(self.ent_vol.get())
+
+        try:
+            option_type = str(self.ent_type.get().upper())
+            if option_type == "":
+                messagebox.showerror("showerror", "Please enter Option type")
+            strike_price = float(self.ent_strike.get())
+            spot_price = float(self.ent_spot.get())
+            maturity = (datetime.strptime(self.ent_maturity.get(), '%d/%m/%Y') - datetime.now()).days / 365
+            volatility = float(self.ent_vol.get())
+        except Exception as e:
+            print(e.args)
+            messagebox.showerror("showerror", "Attribute missing, please check your input")
+
         try:
             rf = float(self.ent_rf.get()) / 100
             div = float(self.ent_div.get()) / 100
@@ -120,10 +152,28 @@ class BsmGUI:
             rf = 0.05
             div = 0.04
 
-        price = Options(strike_price, spot_price, maturity, volatility, rf, div).bsm(option_type)
+        op = Options(strike_price, spot_price, maturity, volatility, rf, div)
+        price = op.bsm(option_type)
+        delta = op.delta(option_type)
+        gamma = op.gamma()
+        vega = op.vega()
+        theta = op.theta(option_type)
 
-        self.ent_result.delete(0, tk.END)
-        self.ent_result.insert(0, str(price))
+        self.ent_price.delete(0, tk.END)
+        self.ent_price.insert(0, str(price))
+
+        self.ent_delta.delete(0, tk.END)
+        self.ent_delta.insert(0, str(delta))
+
+        self.ent_gamma.delete(0, tk.END)
+        self.ent_gamma.insert(0, str(gamma))
+
+        self.ent_vega.delete(0, tk.END)
+        self.ent_vega.insert(0, str(vega))
+
+        self.ent_theta.delete(0, tk.END)
+        self.ent_theta.insert(0, str(theta))
+
 
     def fetch_spot(self):
         """
@@ -131,6 +181,8 @@ class BsmGUI:
         Returns
         -------
         """
+
+        # get spot if the box is checked
         if self.var1.get() == 1:
             try:
                 option_ticker = str(self.chk_ticker_ent.get().upper())
@@ -145,11 +197,21 @@ class BsmGUI:
             self.chk_ticker_ent.delete(0, tk.END)
             self.ent_spot.delete(0, tk.END)
 
-    @staticmethod
-    def manage_pdtable(data: pd.DataFrame):
-        window = tk.Toplevel()
-        window.iconbitmap('assassins_creed.ico')
-        window.grab_set()
+    # @staticmethod
+    def manage_pdtable(self, data: pd.DataFrame):
+        """
+        Create a new window and display data in an Excel way , plot are feasible by using the plot button on the new
+        interface
+
+        Parameters
+        ----------
+        data : Dataframe the need to be displayed in the new window
+        -------
+        """
+
+        window = tk.Toplevel(self.root)
+        # window.iconbitmap('assassins_creed.ico')
+        window.grab_set()  # put the focus on the new window
 
         frame = tk.Frame(master=window)
         frame.pack(fill='both', expand=True)
@@ -166,20 +228,24 @@ class BsmGUI:
         -------
         """
 
-        stock_price = Options.retrieve_ticker()
-        df = Options.get_option(stock_price)
+        stock_price = Options.retrieve_ticker()  # retrieve the ticker and spot
+        df = Options.get_option(stock_price)  # retrieve option data from yahoo finance
 
         df['Price'] = 0
         df['Delta'] = 0
         df['Gamma'] = 0
         df['Vega'] = 0
+        df['Theta'] = 0
 
+        # Computing Option price, delta, gamma and vega
         for i in range(len(df)):
+            #  Instantiation of Options class
             op = Options(strike=df['Strike'].loc[i], spot=df['Spot'].loc[i], sigma=df['Volatility'].loc[i],
                          t=(datetime.strptime(df['Maturity'].loc[i], '%Y-%m-%d') - datetime.now()).days / 365)
 
-            df['Price'].loc[i] = op.bsm(option_type=df['Type'].loc[i])
-            df['Delta'].loc[i] = op.delta(option_type=df['Type'].loc[i])
+            df['Price'].loc[i] = op.bsm(option_type=df['Type'].loc[i].upper())
+            df['Delta'].loc[i] = op.delta(option_type=df['Type'].loc[i].upper())
+            df['Theta'].loc[i] = op.theta(option_type=df['Type'].loc[i].upper())
             df['Gamma'].loc[i] = op.gamma()
             df['Vega'].loc[i] = op.vega()
 
