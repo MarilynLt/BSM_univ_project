@@ -79,7 +79,7 @@ class BsmGUI:
         self.ent_div = ttk.Entry(master=self.minor_frame, width=8)
         self.ent_div.grid(row=8, column=1, padx=1, pady=3)
 
-        self.btn_compute = ttk.Button(master=self.minor_frame, text='Compute', command=Options.option_chart)
+        self.btn_compute = ttk.Button(master=self.minor_frame, text='Compute', command=self.calculate)
         self.btn_compute.grid(row=9, column=0, columnspan=2, padx=7, pady=22)
 
         self.label_result = ttk.Label(master=self.minor_frame, text='Result:')
