@@ -230,14 +230,14 @@ class Options:
     def option_chart():
         with PdfPages('Options_graph.pdf') as pdf:
             with plt.style.context('seaborn-v0_8-darkgrid'):
-                spot = np.arange(1, 100)
+                spot = np.arange(1, 150)
 
                 # Greek plot
 
                 fig, axes = plt.subplots(5, 1, figsize=(10, 25))
                 fig.suptitle('Greeks', ha='center', fontweight='bold', fontsize=15)
                 fig.tight_layout(pad=7.0)
-                strike = [37, 54, 71]
+                strike = [63, 87, 124]
 
                 for s in strike:
                     del_call = [Options(float(s), float(x), 5.0, 0.1).delta('CALL') for x in spot]
@@ -275,11 +275,11 @@ class Options:
 
                 # Option plot
 
-                call_val = [Options(37.0, float(x), 1.0, 0.5).bsm('CALL') for x in spot]
-                put_val = [Options(37.0, float(x), 1.0, 0.5).bsm('PUT') for x in spot]
+                call_val = [Options(87.0, float(x), 1.0, 0.5).bsm('CALL') for x in spot]
+                put_val = [Options(87.0, float(x), 1.0, 0.5).bsm('PUT') for x in spot]
 
                 axes[4].set_title(f'Change in option value with stock price'
-                                  f'\n \n Strike: 37, t: 1 an, sigma: 0.5, r: 5%, q: 4%', fontweight="bold")
+                                  f'\n \n Strike: 87, t: 1 an, sigma: 0.5, r: 5%, q: 4%', fontweight="bold")
                 axes[4].set_xlabel('Stock Price')
                 axes[4].set_ylabel("Option price")
                 axes[4].plot(spot, call_val, color='green', label='Call')
