@@ -79,7 +79,7 @@ class BsmGUI:
         self.ent_div = ttk.Entry(master=self.minor_frame, width=8)
         self.ent_div.grid(row=8, column=1, padx=1, pady=3)
 
-        self.btn_compute = ttk.Button(master=self.minor_frame, text='Compute', command=self.calculate)
+        self.btn_compute = ttk.Button(master=self.minor_frame, text='Compute', command=Options.option_chart)
         self.btn_compute.grid(row=9, column=0, columnspan=2, padx=7, pady=22)
 
         self.label_result = ttk.Label(master=self.minor_frame, text='Result:')
@@ -124,6 +124,14 @@ class BsmGUI:
 
         self.btn_run = ttk.Button(master=self.main_frame, text='Run', command=self.run_bsm_ptf)
         self.btn_run.grid(row=5, column=1, columnspan=2, padx=7, pady=22)
+
+        self.var2 = tk.IntVar()
+        self.chk_report = ttk.Checkbutton(master=self.main_frame, text="Export to Excel", variable=self.var2,
+                                          onvalue=1, offvalue=0)
+        self.chk_report.grid(row=6, column=1, columnspan=2, padx=7, pady=20, sticky='nsew')
+
+        self.btn_chart = ttk.Button(master=self.main_frame, text="Generate Options' chart", command=self.chart_op)
+        self.btn_chart.grid(row=7, column=1, columnspan=2, padx=7, pady=20)
 
     def calculate(self):
         """
@@ -174,7 +182,6 @@ class BsmGUI:
         self.ent_theta.delete(0, tk.END)
         self.ent_theta.insert(0, str(theta))
 
-
     def fetch_spot(self):
         """
         Get stock price from yahoo finance
@@ -211,7 +218,7 @@ class BsmGUI:
 
         window = tk.Toplevel(self.root)
         # window.iconbitmap('assassins_creed.ico')
-        window.grab_set()  # put the focus on the new window
+        window.focus_force()  # put the focus on the new window
 
         frame = tk.Frame(master=window)
         frame.pack(fill='both', expand=True)
@@ -220,6 +227,10 @@ class BsmGUI:
         pt.show()
 
         pt.model.df = data
+
+    @staticmethod
+    def generate_excel(data: pd.DataFrame):
+        data.to_excel("BSM_portfolio.xlsx", sheet_name='Portfolio', index=False)
 
     def run_bsm_ptf(self):
         """
@@ -249,4 +260,19 @@ class BsmGUI:
             df['Gamma'].loc[i] = op.gamma()
             df['Vega'].loc[i] = op.vega()
 
+        if self.var2.get() == 1:
+            self.generate_excel(data=df)
+
         self.manage_pdtable(data=df)
+
+    @staticmethod
+    def chart_op():
+        try:
+            Options.option_chart()
+            messagebox.showinfo("info", "PDF successfully generated!")
+        except Exception as e:
+            print(e)
+            messagebox.showinfo("info", "unable to generate PDF")
+
+
+
