@@ -1,5 +1,5 @@
 #University python project on the black and scholes model with dividend included
-
+This is a Black and Scholes Merton Pricer with a Tkinter interface
 
 #used libraries (must be installed before runing the code) : 
 -random

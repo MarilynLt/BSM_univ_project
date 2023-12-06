@@ -156,9 +156,11 @@ class Options:
         tickers = [i.replace('\n', '') for i in tickers]
 
         # get the spot of each stocks from yahoo finance
-        spots = yf.download(tickers, interval="1m")['Adj Close'].iloc[-1, :]
-        stock_price = list(
-            pd.DataFrame({"stocks": tickers, "spot": spots}).reset_index(drop=True).dropna().to_records(index=False))
+        spots = (yf.download(tickers, interval="1m")['Adj Close'].iloc[-1, :]).reset_index()
+        while spots.isnull().sum().sum() >= 5:
+            print(f'{spots.isnull().sum().sum()} missing values')
+            spots = (yf.download(tickers)['Adj Close'].iloc[-1, :]).reset_index()
+        stock_price = list(spots.dropna().itertuples(index=False, name=None))
 
         return stock_price
 
@@ -288,3 +290,6 @@ class Options:
 
             pdf.savefig()
             plt.close()
+
+
+# print(yf.download("^IRX")["Adj Close"])
