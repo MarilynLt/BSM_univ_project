@@ -205,28 +205,12 @@ class Options:
                     })
                     break
 
-        # df = pd.DataFrame()
-        # df['Ticker'] = 0
-        # df['Spot'] = 0
-        # for t, s in Options.retrieve_ticker():
-        #     try:
-        #         maturity = yf.Ticker(str(t)).options
-        #         exp = maturity[randrange(len(maturity))] # return a random range from the maturity list
-        #     except ValueError:
-        #         continue
-        #
-        #     opt = yf.Ticker(str(t)).option_chain(exp)
-        #     opt = pd.concat([opt.calls, opt.puts], ignore_index=True)
-        #     df = pd.concat([df, opt], ignore_index=True)
-        #     df.loc[max(df.index), ('Ticker', 'Spot')] = t, s
-        #     df.iloc[:, 0:2] = df.iloc[:, 0:2].fillna(method='bfill')
-        #
-        # # column to know if option is a call or a put
-        # df['Type'] = df['contractSymbol'].str[4:].apply(lambda x: 'P' if "P" in x else 'C')
-
-        # print(time.time() - start)
-
         return pd.DataFrame(option_data)
+
+
+class Chart(Options):
+    def __init__(self, parent):
+        super().__init__(parent)
 
     @staticmethod
     def option_chart():
@@ -290,6 +274,3 @@ class Options:
 
             pdf.savefig()
             plt.close()
-
-
-# print(yf.download("^IRX")["Adj Close"])
