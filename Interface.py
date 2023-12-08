@@ -48,6 +48,8 @@ class Minor(ttk.Frame):
         self.configure(relief='ridge')
         self.grid(row=0, column=0, sticky="nsew")
 
+        # Widgets
+
         self.label_title = ttk.Label(self, text="BSM Model on selected option")
         self.label_title.grid(row=0, column=1, padx=5, pady=25, columnspan=2)
 
@@ -142,7 +144,11 @@ class Minor(ttk.Frame):
                 messagebox.showerror("showerror", "Please enter Option type")
             strike_price = float(self.ent_strike.get())
             spot_price = float(self.ent_spot.get())
-            maturity = (datetime.strptime(self.ent_maturity.get(), '%d/%m/%Y') - datetime.now()).days / 365
+            try:
+                maturity = (datetime.strptime(self.ent_maturity.get(), '%d/%m/%Y') - datetime.now()).days / 365
+            except Exception as e:
+                print(e.args)
+                messagebox.showerror("showerror", "The maturity should be in DD/MM/YYYY")
             volatility = float(self.ent_vol.get())
         except Exception as e:
             print(e.args)
