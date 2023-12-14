@@ -35,26 +35,6 @@ class Options:
         self._d1 = self.d1()
         self._d2 = self.d2()
 
-    @property
-    def S(self):
-        return self.spot
-
-    @property
-    def K(self):
-        return self.strike
-
-    @property
-    def R(self):
-        return self.r
-
-    @property
-    def Q(self):
-        return self.q
-
-    @property
-    def T(self):
-        return self.t
-
     @staticmethod
     def n(x):
         return norm.cdf(x)
@@ -116,7 +96,7 @@ class Options:
         vega = self.spot * np.exp(-self.q * self.t) * np.sqrt(self.t) * norm.pdf(self._d1) / 100
         return vega.round(4)
 
-    def theta(self, option_type) -> float:
+    def theta(self, option_type: str) -> float:
         """
         Vega measures the change in the option price per one calendar day (or 1/365 of a year)
         :return: theta of the option
@@ -134,6 +114,22 @@ class Options:
         except Exception as e:
             print(f"{e} \n"
                   f"Option type missing, please enter the option type. It should be a string")
+
+    def intrinsic_value(self, option_type: str) -> list:
+        """
+        Give an approximate intrinsic value of the option and the status based on the intrinsic value
+        :param option_type: type of option
+        :returns: intrinsic value and status
+        """
+        value = self.strike - self.spot
+        if (option_type == 'CALL' and value < 0) | (option_type == 'PUT' and value > 0):
+            status = 'In the Money'
+        elif value == 0:
+            status = 'At the Money'
+        else:
+            status = 'Out of the Money'
+
+        return [status, round(value, 2)]
 
     @staticmethod
     def retrieve_ticker() -> list:
@@ -165,7 +161,7 @@ class Options:
         return stock_price
 
     @staticmethod
-    def get_spot(ticker_list):
+    def get_spot(ticker_list: list) -> float:
         """
         get spot price of a stocks list
         :param ticker_list: list of stock ticker
@@ -178,6 +174,7 @@ class Options:
     def get_option(stock_price) -> pd.DataFrame:
         """
         Get the option characteristics from yahoo finance (s, k, t, sigma)
+        :param stock_price: list of tuple with stock's ticker and price
         :return: dataframe with the options data
         """
         option_data = []

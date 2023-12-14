@@ -3,7 +3,6 @@ from datetime import datetime
 from tkinter import messagebox
 from tkinter import ttk
 
-import pandas as pd
 from pandastable import Table
 
 from Option import *
@@ -47,6 +46,10 @@ class Minor(ttk.Frame):
         super().__init__(parent)
         self.configure(relief='ridge')
         self.grid(row=0, column=0, sticky="nsew")
+
+        # Option status
+        self.lbl_val = None
+        self.lbl_status = None
 
         # Widgets
 
@@ -96,6 +99,7 @@ class Minor(ttk.Frame):
 
         self.label_result = ttk.Label(self, text='Result:')
         self.label_result.grid(row=10, column=0, columnspan=2)
+
         self.label_price = ttk.Label(self, text='Price:')
         self.label_price.grid(row=12, column=0)
         self.ent_price = ttk.Entry(self, width=8)
@@ -139,8 +143,8 @@ class Minor(ttk.Frame):
         """
 
         try:
-            option_type = str(self.ent_type.get().upper())
-            if option_type == "":
+            op_type = str(self.ent_type.get().upper())
+            if op_type == "":
                 messagebox.showerror("showerror", "Please enter Option type")
             strike_price = float(self.ent_strike.get())
             spot_price = float(self.ent_spot.get())
@@ -162,11 +166,13 @@ class Minor(ttk.Frame):
             div = 0.04
 
         op = Options(strike_price, spot_price, maturity, volatility, rf, div)
-        price = op.bsm(option_type)
-        delta = op.delta(option_type)
+        price = op.bsm(op_type)
+        delta = op.delta(op_type)
         gamma = op.gamma()
         vega = op.vega()
-        theta = op.theta(option_type)
+        theta = op.theta(op_type)
+        status = op.intrinsic_value(op_type)[0]
+        value = str(op.intrinsic_value(op_type)[1])
 
         self.ent_price.delete(0, tk.END)
         self.ent_price.insert(0, str(price))
@@ -182,6 +188,20 @@ class Minor(ttk.Frame):
 
         self.ent_theta.delete(0, tk.END)
         self.ent_theta.insert(0, str(theta))
+
+        # delete label if already printed
+        try:
+            self.lbl_status.grid_forget()
+            self.lbl_val.grid_forget()
+        except Exception as e:
+            print(e.args)
+            pass
+
+        self.lbl_status = ttk.Label(self, text=status, foreground=('red' if len(status) > 12 else 'green'))
+        self.lbl_val = ttk.Label(self, text=f'Intrinsic value: {value}',
+                                 foreground=('red' if len(status) > 12 else 'green'))
+        self.lbl_status.grid(row=5, column=2, columnspan=2, pady=2)
+        self.lbl_val.grid(row=4, column=2, columnspan=2, pady=2)
 
     def fetch_spot(self):
         """
@@ -249,6 +269,7 @@ class Main(ttk.Frame):
         df['Gamma'] = 0
         df['Vega'] = 0
         df['Theta'] = 0
+        df['Status'] = 0
 
         # Computing Option price, delta, gamma and vega
         for i in range(len(df)):
@@ -256,6 +277,7 @@ class Main(ttk.Frame):
             op = Options(strike=df['Strike'].loc[i], spot=df['Spot'].loc[i], sigma=df['Volatility'].loc[i],
                          t=(datetime.strptime(df['Maturity'].loc[i], '%Y-%m-%d') - datetime.now()).days / 365)
 
+            df['Status'].loc[i] = op.intrinsic_value(option_type=df['Type'].loc[i].upper())[0]
             df['Price'].loc[i] = op.bsm(option_type=df['Type'].loc[i].upper())
             df['Delta'].loc[i] = op.delta(option_type=df['Type'].loc[i].upper())
             df['Theta'].loc[i] = op.theta(option_type=df['Type'].loc[i].upper())
